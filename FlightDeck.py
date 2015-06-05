@@ -18,16 +18,16 @@ barometer      = BMP085(0x77)
 last_photo_time    = 0
 time_lapse_seconds = 10
 
-buzzer_meters = 500
+buzzer_meters = 4000
+ascent_mode   = False
+descent_mode  = False
 
 def soundBuzzer():
-  altitude = barometer.readAltitude()
-  if altitude < buzzer_meters:
-    grovepi.pinMode(buzzer_port,"OUTPUT")
-    grovepi.digitalWrite(buzzer_port,1)
-    time.sleep(1)
-    grovepi.digitalWrite(buzzer_port,0)
-    time.sleep(1)
+  grovepi.pinMode(buzzer_port,"OUTPUT")
+  grovepi.digitalWrite(buzzer_port,1)
+  time.sleep(1)
+  grovepi.digitalWrite(buzzer_port,0)
+  time.sleep(1)
 
 def logInternalTemp():
   [ ctemp,hum ] = dht(temphum_port,0)
@@ -59,7 +59,13 @@ def logBarometricPressure():
   time.sleep(1)
 
 def logBarometricAltitude():
+  global ascent_mode
+  global descent_mode
   altitude = barometer.readAltitude()
+  if ascent_mode is True and altitude < buzzer_meters:
+    descent_mode = True
+  if altitude > buzzer_meters:
+    ascent_mode = True
   line = getTimestamp() + "," + str(altitude) + "," + "m\n"
   log  = open("/root/logs/barometric_altitude.log", "a")
   log.write(line)
@@ -98,15 +104,33 @@ def getTimestamp():
 
 while True:
   try:
-    soundBuzzer()
-    logInternalTemp()
-    logInternalHumidity()
-    logVibrations()
-    logBarometricPressure()
-    logBarometricAltitude()
-    logBarometricTemp()
-    logExternalTemp()
-    logPhoto()
+    if descent_mode is True:
+      soundBuzzer()
+      logInternalTemp()
+      soundBuzzer()
+      logInternalHumidity()
+      soundBuzzer()
+      logVibrations()
+      soundBuzzer()
+      logBarometricPressure()
+      soundBuzzer()
+      logBarometricAltitude()
+      soundBuzzer()
+      logBarometricTemp()
+      soundBuzzer()
+      logExternalTemp()
+      soundBuzzer()
+      logPhoto()
+    else:
+      soundBuzzer()
+      logInternalTemp()
+      logInternalHumidity()
+      logVibrations()
+      logBarometricPressure()
+      logBarometricAltitude()
+      logBarometricTemp()
+      logExternalTemp()
+      logPhoto()
   except KeyboardInterrupt:
     grovepi.digitalWrite(buzzer_port,0)
     break
